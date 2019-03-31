@@ -10,20 +10,20 @@ import java.util.ArrayList;
 public class AssemblerDriver {
 	
 	public static void main(String[] args) {
+		
 		final int MAX_BINARY_DIGIT_SIZE = 15;
 		int nextAvailableRAMAddress = 16;
-		String filePath = "C:\\Users\\thedr_000\\Downloads\\nand2tetris\\nand2tetris\\projects\\06\\rect\\Rect.asm";
+		String filePath;
+		if(args.length == 1)
+			filePath = args[0];
+		else filePath = "C:\\Users\\thedr_000\\Downloads\\nand2tetris\\nand2tetris\\projects\\06\\rect\\Rect.asm";
 		Parser parser = new Parser(filePath);
 		Code code = new Code();
 		SymbolTable symbolTable = new SymbolTable();
-		if(args.length == 1)
-		{
-			filePath = args[0];
-		}
+	
 		//Buid the symbol table
 		ArrayList<String> assemblyCommands = parser.getRawAssemblyCommands();
 		int count = 0;
-		//First Pass
 		for(int i = 0; i < assemblyCommands.size(); i++) {
 			String command = assemblyCommands.get(i);
 			if(command.contains("(") && command.contains(")"))
@@ -35,29 +35,16 @@ public class AssemblerDriver {
 			}
 			count++;
 		}
-		//Second Pass
-		/**for(int i = 0; i < assemblyCommands.size(); i++)
-		{
-			String command = assemblyCommands.get(i);
-			if(command.contains("@"))
-			{
-				int start = command.indexOf("@")+1;
-				String symbol = command.substring(start);
-				if(!symbolTable.contains(symbol))
-				{
-					
-				}
-			}
-		}
-		**/
+		
 		BufferedWriter writer = null;
-        try {
-        	File fileToWrite = new File(filePath.replaceAll(".asm", ".hack"));
-        	writer = new BufferedWriter(new FileWriter(fileToWrite));
-        } catch (Exception e) {
-        	System.out.println("Unable to create output file");
-        }
-	
+		try {
+			File fileToWrite = new File(filePath.replaceAll(".asm", ".hack"));
+			writer = new BufferedWriter(new FileWriter(fileToWrite));
+		} catch (Exception e) {
+			System.out.println("Unable to create output file");
+			System.exit(0);
+		}
+		// Translate assembly commands to machine language
 		while(parser.hasMoreCommands())
 		{
 			parser.advance();
@@ -97,7 +84,8 @@ public class AssemblerDriver {
 						}
 					}catch(NumberFormatException nfe)
 					{
-						//If the program gets to this point, the symbol must be a user-defined variable
+						//If the program gets to this point, the symbol must be a user-defined variable.
+						//Add it to the symbol table and concatenate the binary address
 						symbolTable.addEntry(symbol, nextAvailableRAMAddress);
 						machineCode+=symbolTable.getAddress(symbol);
 						nextAvailableRAMAddress++;
@@ -106,17 +94,20 @@ public class AssemblerDriver {
 			}
 			else
 			{
+				//The command must be an L_COMMAND, ignore it
 				continue;
 			}
+			//Write the machine instruction to file
 			try {
 				writer.write(machineCode + "\n");
 			} catch (IOException e) {
 				System.out.println("Unable to write instruction");
 			}
 		}
-        try {
-            writer.close();
-        } catch (Exception e) {
-        }
+		//Close the file writer when Assembling is finished
+		try {
+		    writer.close();
+		} catch (Exception e) {
+		}
 	}
 }
